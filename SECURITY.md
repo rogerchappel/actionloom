@@ -2,57 +2,38 @@
 
 ## Supported Versions
 
-Replace this section with the supported versions for `actionloom`.
+actionloom is pre-1.0. Security fixes target the latest `main` branch until versioned releases exist.
 
-Example:
-
-```md
 | Version | Supported |
 | --- | --- |
-| .x | Yes |
-| < .0 | No |
-```
-
-If the project does not publish versioned releases yet, say that clearly.
+| `main` | Yes, best effort |
+| npm releases | Not published yet |
 
 ## Reporting a Vulnerability
 
-Please do not report suspected vulnerabilities in public issues, pull requests, or discussions.
+Please do not post exploit details, secrets, private workflow files, or sensitive repository metadata in public issues.
 
-Ask maintainers for the private security reporting path before sharing details.
+Until GitHub private vulnerability reporting is enabled, open a public issue asking for a private contact path and include only a short, non-sensitive summary. Once a private path is available, include:
 
-If no private reporting path exists yet, ask maintainers through public project channels for a private reporting path. Do not include exploit details, secrets, personal data, or sensitive technical details in public messages.
-
-## What to Include
-
-When a private reporting path is available, include:
-
-- A clear description of the issue.
-- Affected versions, files, packages, workflows, or configuration.
-- Steps to reproduce, proof of concept, or attack scenario when safe to share.
-- Potential impact.
-- Suggested mitigation, if known.
-
-## Response Expectations
-
-Maintainers review good-faith reports as capacity allows.
-
-Do not imply paid support, guaranteed response times, guaranteed fixes, or service-level agreements unless `actionloom` explicitly provides them.
+- Affected actionloom version or commit.
+- The smallest safe reproduction.
+- Impact and severity estimate.
+- Suggested mitigation, if you have one.
 
 ## Scope
 
 In scope:
 
-- Vulnerabilities in actionloom.
-- Insecure default configuration shipped by this project.
-- CI, release, or dependency guidance maintained by this project.
+- Incorrect audit advice that could encourage unsafe GitHub Actions defaults.
+- CLI behavior that reads or writes outside the requested local paths.
+- Package, release, or workflow configuration maintained by this repository.
 
 Out of scope:
 
-- General support requests.
-- Requests for guaranteed maintenance timelines.
-- Issues in unrelated downstream projects.
+- Security issues in repositories audited by actionloom.
+- Requests for guaranteed maintenance timelines or paid support.
+- Social engineering, spam, or attempts to obtain maintainer credentials.
 
-## Disclosure
+## Project Safety Model
 
-Coordinate disclosure with maintainers before publishing vulnerability details.
+actionloom is intentionally local-first. It should not make hidden network calls, read credentials, publish workflows, or change GitHub settings. Treat any behavior that violates that model as security-relevant.
