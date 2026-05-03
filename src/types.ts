@@ -25,6 +25,8 @@ export interface WorkflowSummary {
   permissions?: string;
 }
 
+export type SeveritySummary = Record<Severity, number>;
+
 export interface AuditReport {
   root: string;
   generatedAt: string;
@@ -32,6 +34,7 @@ export interface AuditReport {
   summaries: WorkflowSummary[];
   findings: Finding[];
   recommendationCount: number;
+  severitySummary: SeveritySummary;
 }
 
 export interface InspectOptions {

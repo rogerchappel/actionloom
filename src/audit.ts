@@ -1,7 +1,7 @@
 import path from "node:path";
 import { blockText, countTopLevelMapEntries, firstScalar, lineNumberOf } from "./parser.js";
 import { findWorkflowFiles } from "./workflows.js";
-import type { AuditReport, Finding, InspectOptions, Severity, WorkflowFile, WorkflowSummary } from "./types.js";
+import type { AuditReport, Finding, InspectOptions, Severity, SeveritySummary, WorkflowFile, WorkflowSummary } from "./types.js";
 
 const severityRank: Record<Severity, number> = { info: 0, low: 1, medium: 2, high: 3 };
 
@@ -17,6 +17,7 @@ export async function inspectRepository(root: string, options: InspectOptions = 
     summaries,
     findings: findings.sort((a, b) => severityRank[b.severity] - severityRank[a.severity] || a.file.localeCompare(b.file)),
     recommendationCount: findings.length,
+    severitySummary: summarizeSeverities(findings),
   };
 }
 
@@ -91,6 +92,29 @@ export function auditWorkflow(workflow: WorkflowFile): Finding[] {
     });
   }
 
+
+  if (/runs-on\s*:/.test(content) && !/timeout-minutes\s*:/.test(content)) {
+    findings.push({
+      id: "timeout-missing",
+      title: "Job timeout is not declared",
+      severity: "low",
+      file,
+      line: lineNumberOf(content, /runs-on\s*:/),
+      recommendation: "Add timeout-minutes to CI jobs so stuck commands do not burn runner minutes indefinitely.",
+    });
+  }
+
+  if (/run\s*:\s*npm install\b/.test(content)) {
+    findings.push({
+      id: "npm-install-in-ci",
+      title: "CI uses npm install instead of npm ci",
+      severity: "low",
+      file,
+      line: lineNumberOf(content, /run\s*:\s*npm install\b/),
+      recommendation: "Use npm ci in CI so dependency installs are lockfile-based and reproducible.",
+    });
+  }
+
   if (/strategy\s*:[\s\S]*matrix\s*:/.test(content) && !/fail-fast\s*:/.test(content)) {
     findings.push({
       id: "matrix-fail-fast-unspecified",
@@ -130,4 +154,10 @@ export function summarizeWorkflow(workflow: WorkflowFile): WorkflowSummary {
 
 export function hasSeverityAtLeast(report: AuditReport, threshold: Severity): boolean {
   return report.findings.some((finding) => severityRank[finding.severity] >= severityRank[threshold]);
+}
+
+function summarizeSeverities(findings: Finding[]): SeveritySummary {
+  const summary: SeveritySummary = { info: 0, low: 0, medium: 0, high: 0 };
+  for (const finding of findings) summary[finding.severity] += 1;
+  return summary;
 }
