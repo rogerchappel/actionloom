@@ -68,3 +68,5 @@ jobs:
           npm test --if-present
           npm run typecheck --if-present
           npm run build --if-present
+          npm run smoke --if-present
+          bash scripts/validate.sh
