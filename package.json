@@ -25,7 +25,7 @@
     "check": "tsc --noEmit",
     "build": "tsc -p tsconfig.json",
     "test": "npm run build && node --test test/*.test.js",
-    "smoke": "npm run build && node dist/cli.js inspect fixtures/safe-workflows --format markdown --fail-on medium && node dist/cli.js generate node-ci --package-manager npm --node-versions 20,22 --output tmp/generated-ci.yml"
+    "smoke": "bash scripts/smoke.sh"
   },
   "keywords": [
     "github-actions",
@@ -52,5 +52,10 @@
   "devDependencies": {
     "@types/node": "^24.0.0",
     "typescript": "^5.8.0"
-  }
+  },
+  "funding": {
+    "type": "github",
+    "url": "https://github.com/sponsors/rogerchappel"
+  },
+  "sideEffects": false
 }
