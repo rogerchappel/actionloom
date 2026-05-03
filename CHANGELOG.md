@@ -1,21 +1,9 @@
 # Changelog
 
-All notable changes to this project will be documented in this file.
+## 0.1.0 - Unreleased
 
-This project follows the [Keep a Changelog](https://keepachangelog.com/en/1.1.0/)
-format and uses semantic versioning when versioned releases are published.
-
-## [Unreleased]
-
-### Added
-
-- Initial project setup.
-
-## Release Links
-
-- Unreleased:
-  `https://github.com/rogerchappel/actionloom/compare/...HEAD`
-- Latest release:
-  `https://github.com/rogerchappel/actionloom/releases/latest`
-
-Replace placeholder links once the first release tag exists.
+- Added local-first workflow inspection for `.github/workflows` files.
+- Added Markdown and JSON audit reports.
+- Added conservative Node CI workflow generation.
+- Added fixture-backed tests and real CLI smoke coverage.
+- Documented safety boundaries, contribution flow, and audit rule catalog.
