@@ -95,6 +95,10 @@ npm run smoke
 bash scripts/validate.sh
 ```
 
+## Rule catalog
+
+See [docs/RULES.md](docs/RULES.md) for the current audit rule IDs and severity levels.
+
 ## Roadmap
 
 - More workflow rules with stable IDs.

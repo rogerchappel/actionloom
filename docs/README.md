@@ -19,3 +19,7 @@ Fixtures are normal repositories with `.github/workflows/*.yml` files. Tests use
 ## Safety promise
 
 No hidden network calls. No token reads. No GitHub mutations. File writes only happen through explicit output flags.
+
+## Rule catalog
+
+See `RULES.md` for current audit IDs and severity levels.
