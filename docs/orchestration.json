@@ -1,0 +1,9 @@
+{
+  "project": "actionloom",
+  "batch": "oss-factory-2026-05-04-am",
+  "owner": "single-project-subagent",
+  "repoPath": "/Users/roger/Developer/my-opensource/actionloom",
+  "sourcePrd": "/Users/roger/Developer/my-opensource/oss-ideas/ideas/in-progress/actionloom/PRD.md",
+  "requiredGates": ["npm test", "npm run check", "npm run build", "npm run smoke", "bash scripts/validate.sh", "real fixture CLI smoke"],
+  "publish": {"owner": "rogerchappel", "visibility": "public", "branch": "main"}
+}
