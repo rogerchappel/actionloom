@@ -12,6 +12,7 @@ export function formatMarkdown(report: AuditReport): string {
     `Generated: ${report.generatedAt}`,
     `Workflows: ${report.workflowCount}`,
     `Recommendations: ${report.recommendationCount}`,
+    `Severity: high ${report.severitySummary.high}, medium ${report.severitySummary.medium}, low ${report.severitySummary.low}, info ${report.severitySummary.info}`,
     "",
     "## Workflows",
     "",
