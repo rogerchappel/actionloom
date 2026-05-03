@@ -1,79 +1,52 @@
 # Contributing
 
-Thanks for helping improve `actionloom`.
+Thanks for helping improve actionloom. This project should stay boring in the best way: deterministic, local-first, well-tested, and careful with CI security advice.
 
-This project values small, reviewable contributions with clear verification.
+## Development
 
-## Issues
-
-Before opening an issue:
-
-- Search existing issues.
-- Confirm the issue applies to `actionloom`.
-- Include enough context for maintainers to understand or reproduce the request.
-
-Bug reports should include:
-
-- What happened.
-- What you expected.
-- Steps to reproduce.
-- Relevant logs, screenshots, or files.
-- The smallest verification step that demonstrates the issue.
-
-Feature requests should include:
-
-- The use case.
-- Why the current project does not solve it.
-- Risks or compatibility concerns.
-- Suggested files or behavior that may need to change.
+```sh
+npm install
+npm test
+npm run check
+npm run build
+npm run smoke
+bash scripts/validate.sh
+```
 
 ## Pull Requests
 
-Pull requests should:
+Good PRs are small and reviewable. Please:
 
-- Focus on one reviewable intent.
-- Use a branch.
-- Follow Conventional Commits.
-- Include tests or verification appropriate to the change.
-- Update documentation when behavior or usage changes.
-- Avoid unrelated formatting or dependency churn.
-- Avoid secrets, private contact details, and project-specific sensitive information.
+- Explain the workflow problem being solved.
+- Add or update fixtures for audit behavior.
+- Add tests for rule IDs, severity, and rendered output when relevant.
+- Update README examples if CLI behavior changes.
+- Avoid hidden network calls, telemetry, credential reads, or publish automation.
+- Use Conventional Commit-style messages when practical.
+
+## Adding audit rules
+
+Each rule should have:
+
+- A stable `id`.
+- A clear `severity` (`info`, `low`, `medium`, or `high`).
+- A recommendation that a maintainer can act on in a PR.
+- At least one unsafe fixture assertion.
+- A safe fixture or unit test proving common good workflows are not over-flagged.
 
 ## Review Pack
 
-Use this format for meaningful changes:
+For meaningful changes, include:
 
 ```md
 ## Review Pack
-Repo:
-Branch:
-PR:
-Task:
-Status: done / blocked / needs review
 Summary:
-Commits:
-Files changed:
 Verification:
 Risk level:
 Rollback plan:
 Human decision needed:
-Next recommended task:
 ```
 
-## Verification
+## Philosophy
 
-Every contribution should include verification.
-
-Examples:
-
-- Documentation: inspect rendered Markdown or review the diff.
-- Tests: run the targeted test command.
-- Types: run the project typecheck.
-- Build: run the smallest build command that covers the change.
-- Manual QA: provide exact steps and observed result.
-
-If verification cannot be run, explain why and provide the exact command maintainers should run.
-
-## Maintainer Review
-
-Maintainers may request narrower scope, clearer verification, additional tests, or safer defaults before merging.
+actionloom should help maintainers and agents produce safer workflow changes, not pretend to be a complete CI security scanner. Prefer precise, explainable checks over noisy magic.
