@@ -81,17 +81,17 @@ export function auditWorkflow(workflow: WorkflowFile): Finding[] {
     });
   }
 
-  if (/run\s*:\s*curl\b.*\|\s*(?:sh|bash)/.test(content) || /run\s*:\s*wget\b.*\|\s*(?:sh|bash)/.test(content)) {
+  const pipeToShellLine = lineNumberOf(content, /(?:curl|wget)\b.*\|\s*(?:sh|bash)\b/);
+  if (pipeToShellLine !== undefined) {
     findings.push({
       id: "pipe-to-shell",
       title: "Remote script is piped to a shell",
       severity: "high",
       file,
-      line: lineNumberOf(content, /(?:curl|wget).*\|\s*(?:sh|bash)/),
+      line: pipeToShellLine,
       recommendation: "Download, verify checksum/signature, and execute reviewed scripts explicitly instead of piping network output to a shell.",
     });
   }
-
 
   if (/runs-on\s*:/.test(content) && !/timeout-minutes\s*:/.test(content)) {
     findings.push({
