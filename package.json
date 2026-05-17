@@ -17,6 +17,7 @@
   "files": [
     "dist",
     "examples",
+    "docs/RULES.md",
     "README.md",
     "SECURITY.md",
     "LICENSE"
