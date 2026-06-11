@@ -20,7 +20,9 @@
     "docs/RULES.md",
     "README.md",
     "SECURITY.md",
-    "LICENSE"
+    "LICENSE",
+    "CHANGELOG.md",
+    "CONTRIBUTING.md"
   ],
   "scripts": {
     "check": "tsc --noEmit",
