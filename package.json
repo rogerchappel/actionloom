@@ -21,8 +21,8 @@
     "README.md",
     "SECURITY.md",
     "LICENSE",
-    "CHANGELOG.md",
-    "CONTRIBUTING.md"
+    "CONTRIBUTING.md",
+    "CODE_OF_CONDUCT.md"
   ],
   "scripts": {
     "check": "tsc --noEmit",
