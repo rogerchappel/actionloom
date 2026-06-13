@@ -20,7 +20,9 @@
     "docs/RULES.md",
     "CHANGELOG.md",
     "CONTRIBUTING.md",
-    "CODE_OF_CONDUCT.md"
+    "CODE_OF_CONDUCT.md",
+    "LICENSE",
+    "SECURITY.md"
   ],
   "scripts": {
     "check": "tsc --noEmit",
