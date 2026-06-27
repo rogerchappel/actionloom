@@ -29,9 +29,9 @@
     "build": "tsc -p tsconfig.json",
     "test": "npm run build && node --test test/*.test.js",
     "smoke": "bash scripts/smoke.sh",
-    "release:check": "npm run check && npm test && npm run smoke && npm pack --dry-run && npm run package:smoke",
+    "release:check": "npm run check && npm test && npm run smoke && npm run package:smoke",
     "prepack": "npm run build",
-    "package:smoke": "npm pack --dry-run"
+    "package:smoke": "node scripts/package-smoke.mjs"
   },
   "keywords": [
     "github-actions",
