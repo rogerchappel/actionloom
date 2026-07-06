@@ -77,6 +77,9 @@ const report = await inspectRepository(".");
 console.log(formatMarkdown(report));
 ```
 
+## Agent Skill
+
+This repository includes [SKILL.md](./SKILL.md) for agents that need a reusable local workflow for GitHub Actions audits and conservative Node CI generation. The skill documents when to inspect, when generation is appropriate, the explicit write boundary for `--output`, and the verification commands to run before recommending workflow changes.
 
 ## Verification
 
