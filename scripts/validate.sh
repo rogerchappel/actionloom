@@ -123,6 +123,7 @@ run_package_script() {
 printf 'Checking actionloom required files...\n'
 
 check_file "README.md"
+check_file "SKILL.md"
 check_file "AGENTS.md"
 check_file "CONTRIBUTING.md"
 check_file "SECURITY.md"

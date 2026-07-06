@@ -8,6 +8,8 @@ Generated: 2026-05-05 21:26:31 UTC
 
 Release-candidate readiness pass for `rogerchappel/actionloom` against `origin/main`.
 
+2026-07-06 update: added reusable agent skill packaging, package inclusion checks for `SKILL.md`, and README guidance for agent-side workflow use.
+
 ## Local verification
 
 - npm ci:pass
