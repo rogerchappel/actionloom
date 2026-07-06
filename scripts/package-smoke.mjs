@@ -11,7 +11,7 @@ const output = execFileSync("npm", ["pack", "--dry-run", "--json"], {
 
 const [packument] = JSON.parse(output);
 const packedFiles = new Set(packument.files.map((file) => file.path));
-const requiredFiles = new Set(["README.md", "LICENSE"]);
+const requiredFiles = new Set(["README.md", "SKILL.md", "LICENSE"]);
 
 if (packageJson.main) {
   requiredFiles.add(packageJson.main.replace(/^\.\//, ""));
