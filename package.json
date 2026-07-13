@@ -16,8 +16,13 @@
   },
   "files": [
     "dist",
+    "docs",
     "examples",
     "README.md",
+    "CHANGELOG.md",
+    "CONTRIBUTING.md",
+    "CODE_OF_CONDUCT.md",
+    "ROADMAP.md",
     "SECURITY.md",
     "LICENSE"
   ],
@@ -26,7 +31,8 @@
     "build": "tsc -p tsconfig.json",
     "test": "npm run build && node --test test/*.test.js",
     "smoke": "bash scripts/smoke.sh",
-    "release:check": "npm run check && npm test && npm run smoke && npm pack --dry-run"
+    "package:smoke": "npm pack --dry-run",
+    "release:check": "npm run check && npm test && npm run smoke && npm run package:smoke"
   },
   "keywords": [
     "github-actions",
