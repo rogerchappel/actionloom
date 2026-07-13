@@ -85,6 +85,22 @@ const report = await inspectRepository(".");
 console.log(formatMarkdown(report));
 ```
 
+## Agent Skill
+
+This repository includes [SKILL.md](./SKILL.md) for agents that need a reusable local workflow for GitHub Actions audits and conservative Node CI generation. The skill documents when to inspect, when generation is appropriate, the explicit write boundary for `--output`, and the verification commands to run before recommending workflow changes.
+
+## Verification
+
+Run the local quality gates before opening a pull request:
+
+```sh
+npm run lint
+npm test
+npm run smoke
+```
+
+`npm run lint` is an alias for the repository static check so contributors can use the common npm workflow without guessing the project-specific command.
+
 ## Safety boundaries
 
 - Local-first by design: actionloom does not make network calls.
@@ -125,3 +141,12 @@ See [SECURITY.md](SECURITY.md). Please do not include secrets or exploit details
 ## License
 
 MIT
+
+## Release Verification
+
+Before publishing or tagging a release, run the local verification path that matches CI:
+
+- `npm run release:check`
+- `npm run package:smoke`
+
+The release checklist in `docs/release-readiness.md` captures the package surface, CLI bins, and reviewer notes for future release PRs.

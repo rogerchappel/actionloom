@@ -19,6 +19,8 @@
     "docs",
     "examples",
     "README.md",
+    "docs/RULES.md",
+    "SKILL.md",
     "CHANGELOG.md",
     "CONTRIBUTING.md",
     "CODE_OF_CONDUCT.md",
@@ -27,12 +29,14 @@
     "LICENSE"
   ],
   "scripts": {
-    "check": "tsc --noEmit",
     "build": "tsc -p tsconfig.json",
+    "check": "tsc --noEmit",
+    "lint": "tsc --noEmit",
     "test": "npm run build && node --test test/*.test.js",
     "smoke": "bash scripts/smoke.sh",
-    "package:smoke": "npm pack --dry-run",
-    "release:check": "npm run check && npm test && npm run smoke && npm run package:smoke"
+    "package:smoke": "node scripts/package-smoke.mjs",
+    "release:check": "npm run check && npm test && npm run smoke && npm run package:smoke",
+    "prepack": "npm run build"
   },
   "keywords": [
     "github-actions",
