@@ -16,14 +16,17 @@
   },
   "files": [
     "dist",
+    "docs",
     "examples",
+    "README.md",
     "docs/RULES.md",
     "SKILL.md",
     "CHANGELOG.md",
     "CONTRIBUTING.md",
     "CODE_OF_CONDUCT.md",
-    "LICENSE",
-    "SECURITY.md"
+    "ROADMAP.md",
+    "SECURITY.md",
+    "LICENSE"
   ],
   "scripts": {
     "build": "tsc -p tsconfig.json",

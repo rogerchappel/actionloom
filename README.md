@@ -15,12 +15,20 @@ The project is original work inspired by the workflow-helper niche noted in the 
 ## Install
 
 ```sh
+npm install actionloom
+```
+
+For local development:
+
+```sh
+git clone https://github.com/rogerchappel/actionloom.git
+cd actionloom
 npm install
 npm run build
 node dist/cli.js --help
 ```
 
-When published to npm, the intended usage is:
+For global CLI usage:
 
 ```sh
 npm install -g actionloom
