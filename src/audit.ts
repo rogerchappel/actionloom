@@ -1,5 +1,5 @@
 import path from "node:path";
-import { blockText, countTopLevelMapEntries, firstScalar, lineNumberOf } from "./parser.js";
+import { blockText, countTopLevelMapEntries, firstScalar, lineNumberOf, mapEntriesWithin, topLevelField, topLevelMapEntries } from "./parser.js";
 import { findWorkflowFiles } from "./workflows.js";
 import type { AuditReport, Finding, InspectOptions, Severity, SeveritySummary, WorkflowFile, WorkflowSummary } from "./types.js";
 
@@ -25,20 +25,22 @@ export function auditWorkflow(workflow: WorkflowFile): Finding[] {
   const findings: Finding[] = [];
   const { content, relativePath: file } = workflow;
 
-  if (/permissions\s*:\s*write-all\b/.test(content)) {
+  const permissions = topLevelField(content, "permissions");
+  if (permissions?.value === "write-all") {
     findings.push({
       id: "permissions-write-all",
       title: "Workflow grants write-all permissions",
       severity: "high",
       file,
-      line: lineNumberOf(content, /permissions\s*:\s*write-all\b/),
+      line: permissions.line,
       evidence: "permissions: write-all",
       recommendation: "Replace write-all with the smallest explicit permissions map, usually contents: read.",
     });
   }
 
-  const permissionsBlock = blockText(content, "permissions");
-  if (!/\n?permissions\s*:/.test(content)) {
+  const permissionEntries = permissions ? mapEntriesWithin(content, permissions) : [];
+  const contentsPermission = permissionEntries.find((entry) => entry.key === "contents");
+  if (!permissions) {
     findings.push({
       id: "permissions-missing",
       title: "Workflow does not declare permissions",
@@ -46,13 +48,13 @@ export function auditWorkflow(workflow: WorkflowFile): Finding[] {
       file,
       recommendation: "Declare top-level permissions, for example permissions: contents: read.",
     });
-  } else if (permissionsBlock && /contents\s*:\s*write/.test(permissionsBlock) && !/pull-requests\s*:\s*write|id-token\s*:\s*write/.test(permissionsBlock)) {
+  } else if (contentsPermission?.value === "write" && !permissionEntries.some((entry) => (entry.key === "pull-requests" || entry.key === "id-token") && entry.value === "write")) {
     findings.push({
       id: "contents-write-without-release-context",
       title: "contents: write appears broader than necessary",
       severity: "medium",
       file,
-      line: lineNumberOf(content, /contents\s*:\s*write/),
+      line: contentsPermission.line,
       evidence: "contents: write",
       recommendation: "Use contents: read for CI; reserve contents: write for release workflows with explicit triggers.",
     });
@@ -93,15 +95,19 @@ export function auditWorkflow(workflow: WorkflowFile): Finding[] {
     });
   }
 
-  if (/runs-on\s*:/.test(content) && !/timeout-minutes\s*:/.test(content)) {
-    findings.push({
-      id: "timeout-missing",
-      title: "Job timeout is not declared",
-      severity: "low",
-      file,
-      line: lineNumberOf(content, /runs-on\s*:/),
-      recommendation: "Add timeout-minutes to CI jobs so stuck commands do not burn runner minutes indefinitely.",
-    });
+  for (const job of topLevelMapEntries(content, "jobs")) {
+    const fields = mapEntriesWithin(content, job);
+    if (fields.some((entry) => entry.key === "runs-on") && !fields.some((entry) => entry.key === "timeout-minutes")) {
+      findings.push({
+        id: "timeout-missing",
+        title: "Job timeout is not declared",
+        severity: "low",
+        file,
+        line: job.line,
+        evidence: `job: ${job.key}`,
+        recommendation: "Add timeout-minutes to CI jobs so stuck commands do not burn runner minutes indefinitely.",
+      });
+    }
   }
 
   if (/run\s*:\s*npm install\b/.test(content)) {
