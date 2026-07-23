@@ -1,0 +1,17 @@
+name: Mixed scope CI
+on: push
+
+jobs:
+  scoped:
+    permissions:
+      contents: read
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - run: |
+          # permissions: write-all
+          echo "timeout-minutes: 30"
+  unscoped:
+    runs-on: ubuntu-latest
+    steps:
+      - run: echo test
