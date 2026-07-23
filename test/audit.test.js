@@ -28,6 +28,18 @@ test("auditWorkflow detects missing permissions on a single workflow object", ()
   assert.deepEqual(findings.map((finding) => finding.id), ["permissions-missing", "timeout-missing"]);
 });
 
+test("mixed job settings do not stand in for workflow permissions or other job timeouts", async () => {
+  const report = await inspectRepository("fixtures/mixed-scope-workflows", { now: fixedNow });
+  const permissionFindings = report.findings.filter((finding) => finding.id.startsWith("permissions-"));
+  const timeoutFindings = report.findings.filter((finding) => finding.id === "timeout-missing");
+
+  assert.deepEqual(permissionFindings.map((finding) => finding.id), ["permissions-missing"]);
+  assert.equal(report.summaries[0].permissions, undefined);
+  assert.equal(timeoutFindings.length, 1);
+  assert.equal(timeoutFindings[0].line, 14);
+  assert.equal(timeoutFindings[0].evidence, "job: unscoped");
+});
+
 test("markdown formatter includes summaries and recommendations", async () => {
   const report = await inspectRepository("fixtures/unsafe-workflows", { now: fixedNow });
   const markdown = formatMarkdown(report);
