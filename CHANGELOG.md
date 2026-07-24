@@ -8,3 +8,4 @@
 - Added fixture-backed tests and real CLI smoke coverage.
 - Documented safety boundaries, contribution flow, and audit rule catalog.
 - Fixed permission and timeout audits to respect workflow and per-job YAML scopes.
+- Reject unknown, duplicate, missing, and empty CLI option values before doing work or writing files.
