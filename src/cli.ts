@@ -29,7 +29,7 @@ async function main(argv: string[]): Promise<number> {
 async function inspectCommand(args: string[]): Promise<number> {
   const target = args.shift();
   if (!target) throw new Error("inspect requires a repository path or workflow file");
-  const options = parseFlags(args);
+  const options = parseFlags(args, new Set(["format", "output", "fail-on"]));
   const format = String(options.format ?? "markdown");
   if (format !== "markdown" && format !== "json") throw new Error("--format must be markdown or json");
   const report = await inspectRepository(target);
@@ -43,8 +43,8 @@ async function inspectCommand(args: string[]): Promise<number> {
     process.stdout.write(rendered);
   }
 
-  if (options.failOn) {
-    const threshold = String(options.failOn) as Severity;
+  if (options["fail-on"]) {
+    const threshold = options["fail-on"] as Severity;
     if (!severities.has(threshold)) throw new Error("--fail-on must be info, low, medium, or high");
     return hasSeverityAtLeast(report, threshold) ? 2 : 0;
   }
@@ -54,12 +54,10 @@ async function inspectCommand(args: string[]): Promise<number> {
 async function generateCommand(args: string[]): Promise<number> {
   const template = args.shift() ?? "node-ci";
   if (template !== "node-ci") throw new Error("Only the node-ci template is available in v0.1.0");
-  const flags = parseFlags(args);
+  const flags = parseFlags(args, new Set(["package-manager", "node-versions", "output"]));
   const options: TemplateOptions = {
-    name: stringFlag(flags.name),
-    packageManager: packageManagerFlag(flags.packageManager),
-    nodeVersions: stringFlag(flags.nodeVersions)?.split(",").map((version) => version.trim()).filter(Boolean),
-    includeSecurity: flags.security === undefined ? true : String(flags.security) !== "false",
+    packageManager: packageManagerFlag(flags["package-manager"]),
+    nodeVersions: flags["node-versions"]?.split(",").map((version) => version.trim()).filter(Boolean),
   };
   const workflow = generateNodeCiWorkflow(options);
   if (flags.output) {
@@ -72,33 +70,33 @@ async function generateCommand(args: string[]): Promise<number> {
   return 0;
 }
 
-function parseFlags(args: string[]): Record<string, string | boolean> {
-  const flags: Record<string, string | boolean> = {};
+function parseFlags(args: string[], allowedFlags: ReadonlySet<string>): Record<string, string> {
+  const flags: Record<string, string> = {};
   for (let index = 0; index < args.length; index += 1) {
     const token = args[index];
     if (!token.startsWith("--")) throw new Error(`Unexpected argument: ${token}`);
     const [rawKey, inlineValue] = token.slice(2).split("=", 2);
-    const key = rawKey.replace(/-([a-z])/g, (_, char: string) => char.toUpperCase());
+    if (!allowedFlags.has(rawKey)) throw new Error(`Unknown option: --${rawKey}`);
+    if (Object.hasOwn(flags, rawKey)) throw new Error(`Duplicate option: --${rawKey}`);
+    let value: string;
     if (inlineValue !== undefined) {
-      flags[key] = inlineValue;
+      value = inlineValue;
     } else if (args[index + 1] && !args[index + 1].startsWith("--")) {
-      flags[key] = args[index + 1];
+      value = args[index + 1];
       index += 1;
     } else {
-      flags[key] = true;
+      throw new Error(`--${rawKey} requires a value`);
     }
+    if (!value.trim()) throw new Error(`--${rawKey} requires a non-empty value`);
+    flags[rawKey] = value;
   }
   return flags;
 }
 
-function packageManagerFlag(value: string | boolean | undefined): TemplateOptions["packageManager"] {
+function packageManagerFlag(value: string | undefined): TemplateOptions["packageManager"] {
   if (!value) return undefined;
   if (value === "npm" || value === "pnpm" || value === "yarn") return value;
   throw new Error("--package-manager must be npm, pnpm, or yarn");
-}
-
-function stringFlag(value: string | boolean | undefined): string | undefined {
-  return typeof value === "string" ? value : undefined;
 }
 
 function printHelp(): void {
