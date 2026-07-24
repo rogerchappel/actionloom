@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import { spawn } from "node:child_process";
 import { test } from "node:test";
-import { readFileSync, writeFileSync, unlinkSync, existsSync, readdirSync } from "node:fs";
+import { readFileSync, unlinkSync, existsSync, mkdtempSync, readdirSync, rmSync } from "node:fs";
 import { join } from "node:path";
 import os from "node:os";
 
@@ -76,3 +76,60 @@ test("CLI write generated workflow to file", async () => {
   assert.match(content, /name: CI/);
   if (existsSync(outFile)) unlinkSync(outFile);
 });
+
+for (const command of ["inspect", "generate"]) {
+  const prefix = command === "inspect" ? ["inspect", "fixtures/safe-workflows"] : ["generate", "node-ci"];
+
+  test(`CLI ${command} rejects missing --output values without writing`, async () => {
+    const cwd = mkdtempSync(join(os.tmpdir(), `actionloom-${command}-`));
+    try {
+      const { code, stderr } = await runCli([...prefix, "--output"], cwd);
+      assert.equal(code, 1);
+      assert.match(stderr, /--output requires a value/);
+      assert.deepEqual(readdirNames(cwd), []);
+    } finally {
+      rmSync(cwd, { recursive: true, force: true });
+    }
+  });
+
+  test(`CLI ${command} rejects unknown and duplicate options`, async () => {
+    const unknown = await runCli([...prefix, "--bogus", "value"]);
+    assert.equal(unknown.code, 1);
+    assert.match(unknown.stderr, /Unknown option: --bogus/);
+
+    const duplicate = await runCli([...prefix, "--output", "one", "--output=two"]);
+    assert.equal(duplicate.code, 1);
+    assert.match(duplicate.stderr, /Duplicate option: --output/);
+  });
+
+  test(`CLI ${command} accepts separate and inline option values`, async () => {
+    const separate = command === "inspect"
+      ? await runCli([...prefix, "--format", "json"])
+      : await runCli([...prefix, "--package-manager", "npm"]);
+    assert.equal(separate.code, 0);
+
+    const inline = command === "inspect"
+      ? await runCli([...prefix, "--format=json"])
+      : await runCli([...prefix, "--package-manager=npm"]);
+    assert.equal(inline.code, 0);
+  });
+}
+
+test("CLI rejects empty values for every documented value-taking option", async () => {
+  const cases = [
+    ["inspect", "fixtures/safe-workflows", "--format="],
+    ["inspect", "fixtures/safe-workflows", "--fail-on="],
+    ["generate", "node-ci", "--package-manager="],
+    ["generate", "node-ci", "--node-versions="],
+    ["generate", "node-ci", "--output="],
+  ];
+  for (const args of cases) {
+    const { code, stderr } = await runCli(args);
+    assert.equal(code, 1, args.join(" "));
+    assert.match(stderr, /requires a non-empty value/);
+  }
+});
+
+function readdirNames(path) {
+  return [...new Set(readdirSync(path))].sort();
+}
