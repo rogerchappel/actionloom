@@ -1,6 +1,11 @@
 # Changelog
 
-## 0.1.0 - Unreleased
+## Unreleased
+
+- Corrected installation documentation for the current GitHub-release tarball distribution channel.
+- Added release validation that prevents advertising an unavailable npm registry package.
+
+## 0.1.0 - 2026-05-04
 
 - Added local-first workflow inspection for `.github/workflows` files.
 - Added Markdown and JSON audit reports.
