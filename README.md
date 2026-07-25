@@ -14,8 +14,14 @@ The project is original work inspired by the workflow-helper niche noted in the 
 
 ## Install
 
+actionloom is currently distributed as an npm-format tarball attached to each
+[GitHub release](https://github.com/rogerchappel/actionloom/releases). It is not
+published to the npm registry.
+
+Install version 0.1.0 in a project directly from the release asset:
+
 ```sh
-npm install actionloom
+npm install https://github.com/rogerchappel/actionloom/releases/download/v0.1.0/actionloom-0.1.0.tgz
 ```
 
 For local development:
@@ -31,7 +37,7 @@ node dist/cli.js --help
 For global CLI usage:
 
 ```sh
-npm install -g actionloom
+npm install -g https://github.com/rogerchappel/actionloom/releases/download/v0.1.0/actionloom-0.1.0.tgz
 actionloom inspect .
 ```
 

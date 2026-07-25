@@ -4,6 +4,28 @@ import { execFileSync } from "node:child_process";
 import { readFile } from "node:fs/promises";
 
 const packageJson = JSON.parse(await readFile("package.json", "utf8"));
+const releaseConfig = JSON.parse(await readFile("releasebox.config.json", "utf8"));
+const readme = await readFile("README.md", "utf8");
+
+if (releaseConfig.release?.publishNpm === false) {
+  const bareRegistryInstall =
+    /(?:^|\n)[ \t]*npm install(?: --global| -g)?[ \t]+(?:--save(?:-dev)?[ \t]+)?actionloom[ \t]*(?:\r?\n|$)/;
+
+  if (bareRegistryInstall.test(readme)) {
+    console.error(
+      "actionloom package smoke failed; README advertises a bare npm registry install while release.publishNpm is false.",
+    );
+    process.exit(1);
+  }
+
+  if (!readme.includes("github.com/rogerchappel/actionloom/releases/download/")) {
+    console.error(
+      "actionloom package smoke failed; README must link an installable GitHub release asset while npm publication is disabled.",
+    );
+    process.exit(1);
+  }
+}
+
 const output = execFileSync("npm", ["pack", "--dry-run", "--json"], {
   encoding: "utf8",
   stdio: ["ignore", "pipe", "inherit"],
