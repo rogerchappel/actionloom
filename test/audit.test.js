@@ -87,6 +87,52 @@ test("auditWorkflow recommends npm ci for reproducible installs", () => {
   assert.ok(findings.some((finding) => finding.id === "npm-install-in-ci"));
 });
 
+test("auditWorkflow inspects block and folded run scalar values", () => {
+  const findings = auditWorkflow({
+    path: "/tmp/ci.yml",
+    relativePath: "ci.yml",
+    content: `name: CI
+permissions:
+  contents: read
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - run: |
+          echo preparing
+          npm install
+      - run: >-
+          npm install
+          --ignore-scripts
+`,
+  });
+  const findingsForNpmInstall = findings.filter((finding) => finding.id === "npm-install-in-ci");
+  assert.deepEqual(findingsForNpmInstall.map((finding) => finding.line), [11, 13]);
+});
+
+test("auditWorkflow ignores rule-like text in YAML comments", () => {
+  const findings = auditWorkflow({
+    path: "/tmp/ci.yml",
+    relativePath: "ci.yml",
+    content: `name: CI
+# pull_request_target:
+on: push
+permissions:
+  contents: read
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      # - run: npm install
+      - run: npm test # npm install
+`,
+  });
+  assert.equal(findings.some((finding) => finding.id === "pull-request-target"), false);
+  assert.equal(findings.some((finding) => finding.id === "npm-install-in-ci"), false);
+});
+
 test("node CI generator emits safe permissions, matrix, and cache", () => {
   const workflow = generateNodeCiWorkflow({ packageManager: "pnpm", nodeVersions: ["20"], name: "Project CI" });
   assert.match(workflow, /name: Project CI/);
