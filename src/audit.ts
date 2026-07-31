@@ -1,5 +1,5 @@
 import path from "node:path";
-import { blockText, countTopLevelMapEntries, firstScalar, lineNumberOf, mapEntriesWithin, topLevelField, topLevelMapEntries } from "./parser.js";
+import { blockText, countTopLevelMapEntries, firstScalar, lineNumberOf, mapEntriesForKey, mapEntriesWithin, scalarLinesForKey, topLevelField, topLevelMapEntries } from "./parser.js";
 import { findWorkflowFiles } from "./workflows.js";
 import type { AuditReport, Finding, InspectOptions, Severity, SeveritySummary, WorkflowFile, WorkflowSummary } from "./types.js";
 
@@ -60,13 +60,14 @@ export function auditWorkflow(workflow: WorkflowFile): Finding[] {
     });
   }
 
-  if (/pull_request_target\s*:/.test(content)) {
+  const pullRequestTarget = mapEntriesForKey(content, "pull_request_target")[0];
+  if (pullRequestTarget) {
     findings.push({
       id: "pull-request-target",
       title: "pull_request_target requires extra review",
       severity: "high",
       file,
-      line: lineNumberOf(content, "pull_request_target"),
+      line: pullRequestTarget.line,
       evidence: "pull_request_target",
       recommendation: "Prefer pull_request for untrusted code, or carefully isolate checkout and secrets when pull_request_target is required.",
     });
@@ -110,13 +111,14 @@ export function auditWorkflow(workflow: WorkflowFile): Finding[] {
     }
   }
 
-  if (/run\s*:\s*npm install\b/.test(content)) {
+  for (const runLine of scalarLinesForKey(content, "run").filter(({ value }) => /^npm install\b/.test(value))) {
     findings.push({
       id: "npm-install-in-ci",
       title: "CI uses npm install instead of npm ci",
       severity: "low",
       file,
-      line: lineNumberOf(content, /run\s*:\s*npm install\b/),
+      line: runLine.line,
+      evidence: runLine.value,
       recommendation: "Use npm ci in CI so dependency installs are lockfile-based and reproducible.",
     });
   }

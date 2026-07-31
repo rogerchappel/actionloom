@@ -5,6 +5,11 @@ export interface YamlMapEntry {
   indent: number;
 }
 
+export interface YamlScalarLine {
+  value: string;
+  line: number;
+}
+
 export function firstScalar(content: string, key: string): string | undefined {
   const entry = topLevelField(content, key);
   return entry?.value ? stripQuotes(entry.value) : undefined;
@@ -37,6 +42,29 @@ export function countTopLevelMapEntries(content: string, key: string): number {
   return topLevelMapEntries(content, key).length;
 }
 
+export function mapEntriesForKey(content: string, key: string): YamlMapEntry[] {
+  return parseMapEntries(content, true).filter((entry) => entry.key === key);
+}
+
+export function scalarLinesForKey(content: string, key: string): YamlScalarLine[] {
+  const lines = content.split(/\r?\n/);
+  return mapEntriesForKey(content, key).flatMap((entry) => {
+    if (!/^[|>][+-]?\d*$/.test(entry.value)) {
+      return entry.value ? [{ value: entry.value, line: entry.line }] : [];
+    }
+
+    const scalarLines: YamlScalarLine[] = [];
+    for (let index = entry.line; index < lines.length; index += 1) {
+      const rawLine = lines[index];
+      const indent = rawLine.match(/^ */)?.[0].length ?? 0;
+      if (rawLine.trim() && indent <= entry.indent) break;
+      const value = stripInlineComment(rawLine).trim();
+      if (value) scalarLines.push({ value, line: index + 1 });
+    }
+    return scalarLines;
+  });
+}
+
 export function blockText(content: string, key: string): string | undefined {
   const parent = topLevelField(content, key);
   if (!parent) return undefined;
@@ -45,7 +73,7 @@ export function blockText(content: string, key: string): string | undefined {
   return lines.slice(parent.line, nextTopLevel ? nextTopLevel.line - 1 : lines.length).join("\n");
 }
 
-function parseMapEntries(content: string): YamlMapEntry[] {
+function parseMapEntries(content: string, includeSequenceEntries = false): YamlMapEntry[] {
   const entries: YamlMapEntry[] = [];
   const lines = content.split(/\r?\n/);
   let blockScalarIndent: number | undefined;
@@ -60,10 +88,13 @@ function parseMapEntries(content: string): YamlMapEntry[] {
 
     const line = stripInlineComment(rawLine);
     if (!line.trim()) continue;
-    const match = line.match(/^( *)([A-Za-z0-9_.-]+)\s*:\s*(.*?)\s*$/);
+    const match = line.match(includeSequenceEntries
+      ? /^( *)(-\s+)?([A-Za-z0-9_.-]+)\s*:\s*(.*?)\s*$/
+      : /^( *)()([A-Za-z0-9_.-]+)\s*:\s*(.*?)\s*$/);
     if (!match) continue;
-    const value = match[3].trim();
-    entries.push({ key: match[2], value, line: index + 1, indent: match[1].length });
+    const value = match[4].trim();
+    const entryIndent = match[1].length + (match[2]?.length ?? 0);
+    entries.push({ key: match[3], value, line: index + 1, indent: entryIndent });
     if (/^[|>][+-]?\d*$/.test(value)) blockScalarIndent = match[1].length;
   }
 
