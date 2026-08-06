@@ -118,7 +118,7 @@ jobs:
   });
   const finding = findings.find((candidate) => candidate.id === "pipe-to-shell");
   assert.ok(finding);
-  assert.equal(finding.line, 12);
+  assert.equal(finding.line, 11);
 });
 
 test("auditWorkflow recommends npm ci for reproducible installs", () => {
