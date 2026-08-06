@@ -1,5 +1,5 @@
 import path from "node:path";
-import { blockText, countTopLevelMapEntries, firstScalar, lineNumberOf, mapEntriesForKey, mapEntriesWithin, scalarLinesForKey, topLevelField, topLevelMapEntries } from "./parser.js";
+import { blockText, countTopLevelMapEntries, firstScalar, lineNumberOf, lineNumberOfScalarMatch, mapEntriesForKey, mapEntriesWithin, scalarLinesForKey, topLevelField, topLevelMapEntries } from "./parser.js";
 import { findWorkflowFiles } from "./workflows.js";
 import type { AuditReport, Finding, InspectOptions, Severity, SeveritySummary, WorkflowFile, WorkflowSummary } from "./types.js";
 
@@ -84,7 +84,7 @@ export function auditWorkflow(workflow: WorkflowFile): Finding[] {
     });
   }
 
-  const pipeToShellLine = lineNumberOf(content, /(?:curl|wget)\b.*\|\s*(?:sh|bash)\b/);
+  const pipeToShellLine = lineNumberOfScalarMatch(content, "run", /(?:curl|wget)\b.*\|\s*(?:sh|bash)\b/);
   if (pipeToShellLine !== undefined) {
     findings.push({
       id: "pipe-to-shell",

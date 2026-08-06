@@ -65,6 +65,47 @@ export function scalarLinesForKey(content: string, key: string): YamlScalarLine[
   });
 }
 
+export function lineNumberOfScalarMatch(content: string, key: string, pattern: RegExp): number | undefined {
+  const lines = content.split(/\r?\n/);
+  for (const entry of mapEntriesForKey(content, key)) {
+    if (!/^[|>][+-]?\d*$/.test(entry.value)) {
+      if (matches(pattern, entry.value)) return entry.line;
+      continue;
+    }
+
+    const scalarLines: YamlScalarLine[] = [];
+    for (let index = entry.line; index < lines.length; index += 1) {
+      const rawLine = lines[index];
+      const indent = rawLine.match(/^ */)?.[0].length ?? 0;
+      if (rawLine.trim() && indent <= entry.indent) break;
+      scalarLines.push({ value: stripInlineComment(rawLine).trim(), line: index + 1 });
+    }
+
+    if (entry.value.startsWith("|")) {
+      const matchingLine = scalarLines.find(({ value }) => matches(pattern, value));
+      if (matchingLine) return matchingLine.line;
+      continue;
+    }
+
+    let foldedValue = "";
+    const offsets: Array<{ offset: number; line: number }> = [];
+    for (const scalarLine of scalarLines) {
+      const separator = foldedValue && scalarLine.value ? " " : scalarLine.value ? "" : "\n";
+      foldedValue += separator;
+      offsets.push({ offset: foldedValue.length, line: scalarLine.line });
+      foldedValue += scalarLine.value;
+    }
+    const match = exec(pattern, foldedValue);
+    if (match) {
+      for (let index = offsets.length - 1; index >= 0; index -= 1) {
+        if (offsets[index].offset <= match.index) return offsets[index].line;
+      }
+      return entry.line;
+    }
+  }
+  return undefined;
+}
+
 export function blockText(content: string, key: string): string | undefined {
   const parent = topLevelField(content, key);
   if (!parent) return undefined;
@@ -121,4 +162,12 @@ function stripInlineComment(line: string): string {
 
 function stripQuotes(value: string): string {
   return value.replace(/^['"]|['"]$/g, "");
+}
+
+function exec(pattern: RegExp, value: string): RegExpExecArray | null {
+  return new RegExp(pattern.source, pattern.flags.replace(/[gy]/g, "")).exec(value);
+}
+
+function matches(pattern: RegExp, value: string): boolean {
+  return exec(pattern, value) !== null;
 }
