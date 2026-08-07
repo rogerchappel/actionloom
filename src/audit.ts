@@ -1,5 +1,5 @@
 import path from "node:path";
-import { blockText, countTopLevelMapEntries, firstScalar, lineNumberOf, lineNumberOfScalarMatch, mapEntriesForKey, mapEntriesWithin, scalarLinesForKey, topLevelField, topLevelMapEntries } from "./parser.js";
+import { blockText, countTopLevelMapEntries, firstScalar, lineNumberOf, lineNumberOfScalarMatch, mapEntriesForKey, mapEntriesWithin, mapEntriesWithinSequenceEntry, scalarLinesForKey, sequenceEntriesWithin, topLevelField, topLevelMapEntries } from "./parser.js";
 import { findWorkflowFiles } from "./workflows.js";
 import type { AuditReport, Finding, InspectOptions, Severity, SeveritySummary, WorkflowFile, WorkflowSummary } from "./types.js";
 
@@ -123,24 +123,32 @@ export function auditWorkflow(workflow: WorkflowFile): Finding[] {
     });
   }
 
-  if (/strategy\s*:[\s\S]*matrix\s*:/.test(content) && !/fail-fast\s*:/.test(content)) {
+  const strategies = topLevelMapEntries(content, "jobs").flatMap((job) => mapEntriesWithin(content, job).filter((entry) => entry.key === "strategy"));
+  const matrixWithoutFailFast = strategies.find((strategy) => {
+    const fields = mapEntriesWithin(content, strategy);
+    return fields.some((entry) => entry.key === "matrix") && !fields.some((entry) => entry.key === "fail-fast");
+  });
+  if (matrixWithoutFailFast) {
+    const matrix = mapEntriesWithin(content, matrixWithoutFailFast).find((entry) => entry.key === "matrix");
     findings.push({
       id: "matrix-fail-fast-unspecified",
       title: "Matrix job does not specify fail-fast",
       severity: "info",
       file,
-      line: lineNumberOf(content, "matrix:"),
+      line: matrix?.line,
       recommendation: "Set strategy.fail-fast intentionally so contributors know whether one failure cancels the matrix.",
     });
   }
 
-  if (/setup-node@/.test(content) && !/cache\s*:\s*['"]?(npm|pnpm|yarn)['"]?/.test(content)) {
+  const setupNodeWithoutCache = workflowSteps(content).find(({ entry, fields }) => /^(?:actions\/)?setup-node@/.test(entry.value)
+    && !fields.some((field) => field.key === "cache" && /^(?:['"])?(?:npm|pnpm|yarn)(?:['"])?$/.test(field.value)));
+  if (setupNodeWithoutCache) {
     findings.push({
       id: "node-cache-missing",
       title: "Node workflow does not configure dependency caching",
       severity: "low",
       file,
-      line: lineNumberOf(content, /setup-node@/),
+      line: setupNodeWithoutCache.entry.line,
       recommendation: "Add cache: npm, pnpm, or yarn to actions/setup-node when lockfiles are stable.",
     });
   }
@@ -150,14 +158,27 @@ export function auditWorkflow(workflow: WorkflowFile): Finding[] {
 
 export function summarizeWorkflow(workflow: WorkflowFile): WorkflowSummary {
   const content = workflow.content;
+  const strategies = topLevelMapEntries(content, "jobs").flatMap((job) => mapEntriesWithin(content, job).filter((entry) => entry.key === "strategy"));
+  const steps = workflowSteps(content);
   return {
     file: workflow.relativePath,
     name: firstScalar(content, "name"),
     jobCount: countTopLevelMapEntries(content, "jobs"),
-    hasMatrix: /strategy\s*:[\s\S]*matrix\s*:/.test(content),
-    hasCache: /cache\s*:\s*['"]?(npm|pnpm|yarn)['"]?/.test(content) || /actions\/cache@/.test(content),
+    hasMatrix: strategies.some((strategy) => mapEntriesWithin(content, strategy).some((entry) => entry.key === "matrix")),
+    hasCache: steps.some(({ entry, fields }) => /^(?:actions\/)?cache@/.test(entry.value)
+      || (/^(?:actions\/)?setup-node@/.test(entry.value) && fields.some((field) => field.key === "cache" && /^(?:['"])?(?:npm|pnpm|yarn)(?:['"])?$/.test(field.value)))),
     permissions: firstScalar(content, "permissions") ?? (blockText(content, "permissions") ? "custom map" : undefined),
   };
+}
+
+function workflowSteps(content: string) {
+  return topLevelMapEntries(content, "jobs").flatMap((job) => {
+    const steps = mapEntriesWithin(content, job).find((entry) => entry.key === "steps");
+    if (!steps) return [];
+    return sequenceEntriesWithin(content, steps)
+      .filter((entry) => entry.key === "uses")
+      .map((entry) => ({ entry, fields: mapEntriesWithinSequenceEntry(content, steps, entry) }));
+  });
 }
 
 export function hasSeverityAtLeast(report: AuditReport, threshold: Severity): boolean {
