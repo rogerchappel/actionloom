@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
-import { auditWorkflow, formatMarkdown, generateNodeCiWorkflow, hasSeverityAtLeast, inspectRepository } from "../dist/index.js";
+import { auditWorkflow, formatMarkdown, generateNodeCiWorkflow, hasSeverityAtLeast, inspectRepository, summarizeWorkflow } from "../dist/index.js";
 
 const fixedNow = new Date("2026-05-04T00:00:00.000Z");
 
@@ -183,4 +183,89 @@ test("node CI generator emits safe permissions, matrix, and cache", () => {
   assert.match(workflow, /timeout-minutes: 15/);
   assert.match(workflow, /fail-fast: false/);
   assert.match(workflow, /cache: pnpm/);
+});
+
+test("workflow summaries and findings ignore matrix and cache text in comments or unrelated scopes", async () => {
+  const workflow = {
+    path: "/tmp/ci.yml",
+    relativePath: ".github/workflows/ci.yml",
+    content: `name: CI
+# matrix: intentionally not configured
+# cache: npm
+permissions:
+  contents: read
+env:
+  cache: npm
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    fail-fast: false
+    steps:
+      - uses: actions/setup-node@v5
+      - run: npm test
+`,
+  };
+  const findings = auditWorkflow(workflow);
+  const report = await inspectRepository("fixtures/comment-only-workflows", { now: fixedNow });
+
+  assert.equal(report.summaries[0].hasMatrix, false);
+  assert.equal(report.summaries[0].hasCache, false);
+  assert.equal(findings.some((finding) => finding.id === "matrix-fail-fast-unspecified"), false);
+  assert.equal(findings.some((finding) => finding.id === "node-cache-missing"), true);
+});
+
+test("workflow detection recognizes scoped matrix settings and supported cache steps", () => {
+  const content = `name: CI
+permissions:
+  contents: read
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    strategy:
+      fail-fast: false
+      matrix:
+        node: [20, 22]
+    steps:
+      - uses: actions/setup-node@v5
+        with:
+          cache: npm
+      - uses: actions/cache@v4
+        with:
+          path: ~/.cache
+          key: test
+`;
+  const workflow = { path: "/tmp/ci.yml", relativePath: "ci.yml", content };
+  const findings = auditWorkflow(workflow);
+  const summary = summarizeWorkflow(workflow);
+
+  assert.equal(summary.hasMatrix, true);
+  assert.equal(summary.hasCache, true);
+  assert.equal(findings.some((finding) => finding.id === "matrix-fail-fast-unspecified"), false);
+  assert.equal(findings.some((finding) => finding.id === "node-cache-missing"), false);
+});
+
+test("matrix detection reports a missing strategy fail-fast field at the matrix line", () => {
+  const workflow = {
+    path: "/tmp/ci.yml",
+    relativePath: "ci.yml",
+    content: `name: CI
+permissions:
+  contents: read
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    strategy:
+      matrix:
+        node: [20, 22]
+    steps:
+      - run: npm test
+`,
+  };
+  const finding = auditWorkflow(workflow).find((candidate) => candidate.id === "matrix-fail-fast-unspecified");
+
+  assert.ok(finding);
+  assert.equal(finding.line, 9);
 });

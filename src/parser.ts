@@ -3,6 +3,7 @@ export interface YamlMapEntry {
   value: string;
   line: number;
   indent: number;
+  sequence: boolean;
 }
 
 export interface YamlScalarLine {
@@ -31,6 +32,19 @@ export function mapEntriesWithin(content: string, parent: YamlMapEntry): YamlMap
   if (children.length === 0) return [];
   const childIndent = Math.min(...children.map((entry) => entry.indent));
   return children.filter((entry) => entry.indent === childIndent);
+}
+
+export function sequenceEntriesWithin(content: string, parent: YamlMapEntry): YamlMapEntry[] {
+  const entries = parseMapEntries(content, true);
+  return entries.filter((entry) => entry.sequence && entry.line > parent.line && entry.indent > parent.indent && !hasEarlierBoundary(entries, parent, entry));
+}
+
+export function mapEntriesWithinSequenceEntry(content: string, parent: YamlMapEntry, sequenceEntry: YamlMapEntry): YamlMapEntry[] {
+  const entries = parseMapEntries(content, true);
+  return entries.filter((entry) => entry.line > sequenceEntry.line
+    && entry.indent > parent.indent
+    && !entries.some((boundary) => boundary.sequence && boundary.line > sequenceEntry.line && boundary.line < entry.line && boundary.indent <= sequenceEntry.indent)
+    && !hasEarlierBoundary(entries, parent, entry));
 }
 
 export function topLevelMapEntries(content: string, key: string): YamlMapEntry[] {
@@ -135,7 +149,7 @@ function parseMapEntries(content: string, includeSequenceEntries = false): YamlM
     if (!match) continue;
     const value = match[4].trim();
     const entryIndent = match[1].length + (match[2]?.length ?? 0);
-    entries.push({ key: match[3], value, line: index + 1, indent: entryIndent });
+    entries.push({ key: match[3], value, line: index + 1, indent: entryIndent, sequence: Boolean(match[2]) });
     if (/^[|>][+-]?\d*$/.test(value)) blockScalarIndent = match[1].length;
   }
 
