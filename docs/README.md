@@ -15,6 +15,7 @@ Fixtures are normal repositories with `.github/workflows/*.yml` files. Tests use
 
 - `fixtures/unsafe-workflows` for risky permissions, `pull_request_target`, missing cache, and pipe-to-shell patterns.
 - `fixtures/safe-workflows` for a small clean Node CI baseline.
+- `fixtures/tag-release-workflows` for the explicit tag-triggered release permission boundary.
 
 ## Safety promise
 
