@@ -19,6 +19,40 @@ test("safe fixture has no medium or high findings", async () => {
   assert.equal(hasSeverityAtLeast(report, "medium"), false);
 });
 
+test("explicit tag release fixture permits contents write", async () => {
+  const report = await inspectRepository("fixtures/tag-release-workflows", { now: fixedNow });
+
+  assert.equal(report.workflowCount, 1);
+  assert.equal(report.findings.some((finding) => finding.id === "contents-write-without-release-context"), false);
+  assert.equal(hasSeverityAtLeast(report, "medium"), false);
+});
+
+test("branch-triggered CI keeps the contents write finding at the permission line", () => {
+  const findings = auditWorkflow({
+    path: "/tmp/ci.yml",
+    relativePath: "ci.yml",
+    content: `name: CI
+on:
+  push:
+    branches: [main]
+permissions:
+  contents: write
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - run: npm ci
+`,
+  });
+  const finding = findings.find((candidate) => candidate.id === "contents-write-without-release-context");
+
+  assert.ok(finding);
+  assert.equal(finding.line, 6);
+  assert.equal(finding.evidence, "contents: write");
+});
+
 test("pull_request_target trigger forms produce one finding at the event line", async () => {
   const report = await inspectRepository("fixtures/pull-request-target-workflows", { now: fixedNow });
   const findings = report.findings.filter((finding) => finding.id === "pull-request-target");
