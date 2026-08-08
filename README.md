@@ -12,6 +12,8 @@ The project is original work inspired by the workflow-helper niche noted in the 
 - Emits Markdown or JSON reports that are easy to paste into PRs.
 - Generates a conservative Node CI template with read-only default permissions.
 
+The `pull_request_target` rule recognizes GitHub Actions mapping syntax, inline event lists, and block event lists. It reports the trigger line once per workflow while ignoring comments and unrelated scalar text.
+
 ## Install
 
 actionloom is currently distributed as an npm-format tarball attached to each
