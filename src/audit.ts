@@ -48,7 +48,9 @@ export function auditWorkflow(workflow: WorkflowFile): Finding[] {
       file,
       recommendation: "Declare top-level permissions, for example permissions: contents: read.",
     });
-  } else if (contentsPermission?.value === "write" && !permissionEntries.some((entry) => (entry.key === "pull-requests" || entry.key === "id-token") && entry.value === "write")) {
+  } else if (contentsPermission?.value === "write"
+    && !hasExplicitTagReleaseTrigger(content)
+    && !permissionEntries.some((entry) => (entry.key === "pull-requests" || entry.key === "id-token") && entry.value === "write")) {
     findings.push({
       id: "contents-write-without-release-context",
       title: "contents: write appears broader than necessary",
@@ -154,6 +156,19 @@ export function auditWorkflow(workflow: WorkflowFile): Finding[] {
   }
 
   return findings;
+}
+
+function hasExplicitTagReleaseTrigger(content: string): boolean {
+  const triggers = topLevelField(content, "on");
+  if (!triggers) return false;
+
+  const triggerEntries = mapEntriesWithin(content, triggers);
+  const push = triggerEntries.find((entry) => entry.key === "push");
+  if (!push || triggerEntries.some((entry) => entry.key !== "push" && entry.key !== "workflow_dispatch")) return false;
+
+  const pushFilters = mapEntriesWithin(content, push);
+  return pushFilters.some((entry) => entry.key === "tags")
+    && !pushFilters.some((entry) => entry.key === "branches");
 }
 
 export function summarizeWorkflow(workflow: WorkflowFile): WorkflowSummary {
