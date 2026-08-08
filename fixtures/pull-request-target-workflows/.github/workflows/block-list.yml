@@ -1,0 +1,8 @@
+name: Block list trigger
+
+on:
+  - push
+  - pull_request_target
+
+permissions:
+  contents: read

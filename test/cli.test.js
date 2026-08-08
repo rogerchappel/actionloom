@@ -37,6 +37,15 @@ test("CLI inspect json output on fixtures/unsafe-workflows", async () => {
   assert.ok(report.severitySummary);
 });
 
+test("CLI reports each supported pull_request_target trigger form once", async () => {
+  const { stdout, code } = await runCli(["inspect", "fixtures/pull-request-target-workflows", "--format", "json"]);
+  assert.equal(code, 0);
+  const report = JSON.parse(stdout);
+  const findings = report.findings.filter((finding) => finding.id === "pull-request-target");
+  assert.equal(findings.length, 3);
+  assert.deepEqual(findings.map((finding) => finding.line).sort((a, b) => a - b), [3, 4, 5]);
+});
+
 test("CLI inspect markdown output on fixtures/unsafe-workflows", async () => {
   const tmpDir = os.tmpdir();
   const outFile = join(tmpDir, "actionloom-test-report.md");
