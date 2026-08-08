@@ -1,5 +1,5 @@
 import path from "node:path";
-import { blockText, countTopLevelMapEntries, firstScalar, lineNumberOf, lineNumberOfScalarMatch, mapEntriesForKey, mapEntriesWithin, mapEntriesWithinSequenceEntry, scalarLinesForKey, sequenceEntriesWithin, topLevelField, topLevelMapEntries } from "./parser.js";
+import { blockText, countTopLevelMapEntries, firstScalar, lineNumberOf, lineNumberOfScalarMatch, mapEntriesWithin, mapEntriesWithinSequenceEntry, scalarLinesForKey, sequenceEntriesWithin, topLevelField, topLevelMapEntries, workflowEventLine } from "./parser.js";
 import { findWorkflowFiles } from "./workflows.js";
 import type { AuditReport, Finding, InspectOptions, Severity, SeveritySummary, WorkflowFile, WorkflowSummary } from "./types.js";
 
@@ -62,14 +62,14 @@ export function auditWorkflow(workflow: WorkflowFile): Finding[] {
     });
   }
 
-  const pullRequestTarget = mapEntriesForKey(content, "pull_request_target")[0];
-  if (pullRequestTarget) {
+  const pullRequestTargetLine = workflowEventLine(content, "pull_request_target");
+  if (pullRequestTargetLine !== undefined) {
     findings.push({
       id: "pull-request-target",
       title: "pull_request_target requires extra review",
       severity: "high",
       file,
-      line: pullRequestTarget.line,
+      line: pullRequestTargetLine,
       evidence: "pull_request_target",
       recommendation: "Prefer pull_request for untrusted code, or carefully isolate checkout and secrets when pull_request_target is required.",
     });

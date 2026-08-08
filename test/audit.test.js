@@ -37,6 +37,7 @@ on:
     branches: [main]
 permissions:
   contents: write
+
 jobs:
   test:
     runs-on: ubuntu-latest
@@ -50,6 +51,39 @@ jobs:
   assert.ok(finding);
   assert.equal(finding.line, 6);
   assert.equal(finding.evidence, "contents: write");
+});
+
+test("pull_request_target trigger forms produce one finding at the event line", async () => {
+  const report = await inspectRepository("fixtures/pull-request-target-workflows", { now: fixedNow });
+  const findings = report.findings.filter((finding) => finding.id === "pull-request-target");
+  assert.equal(report.workflowCount, 3);
+  assert.deepEqual(findings.map(({ file, line }) => ({ file, line })).sort((a, b) => a.file.localeCompare(b.file)), [
+    { file: ".github/workflows/block-list.yml", line: 5 },
+    { file: ".github/workflows/inline-list.yml", line: 3 },
+    { file: ".github/workflows/mapping.yml", line: 4 },
+  ]);
+});
+
+test("pull_request_target text outside supported trigger forms is ignored", () => {
+  const findings = auditWorkflow({
+    path: "/tmp/ci.yml",
+    relativePath: "ci.yml",
+    content: `name: pull_request_target notes
+# on: [pull_request_target]
+on: push
+permissions:
+  contents: read
+env:
+  EVENT_NAME: pull_request_target
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - run: echo pull_request_target
+`,
+  });
+  assert.equal(findings.some((finding) => finding.id === "pull-request-target"), false);
 });
 
 test("auditWorkflow detects missing permissions on a single workflow object", () => {

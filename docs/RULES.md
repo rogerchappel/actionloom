@@ -5,7 +5,7 @@ actionloom v0.1.0 ships a small deterministic rule set. Rule IDs are stable enou
 | Rule ID | Severity | Why it matters |
 | --- | --- | --- |
 | `permissions-write-all` | high | Broad workflow-level write scopes make workflow compromise more damaging. |
-| `pull-request-target` | high | A `pull_request_target` YAML key can expose privileged context to untrusted PR changes when misused. Commented examples are ignored. |
+| `pull-request-target` | high | A `pull_request_target` trigger can expose privileged context to untrusted PR changes when misused. Mapping, inline-list, and block-list `on` forms are detected; comments and unrelated scalar text are ignored. |
 | `pipe-to-shell` | high | Piping remote network output into a shell is difficult to review or reproduce. Inline, block, and folded `run` scalars are inspected; YAML comments are ignored. |
 | `permissions-missing` | medium | GitHub defaults can be broader than a small OSS CI job needs; job-level declarations do not replace an explicit workflow-level default. |
 | `contents-write-without-release-context` | medium | Write access should be reserved for release workflows explicitly limited to tag pushes (optionally with manual dispatch). Branch pushes and other CI triggers still receive this finding. |

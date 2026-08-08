@@ -22,6 +22,30 @@ export function lineNumberOf(content: string, needle: string | RegExp): number |
   return index === -1 ? undefined : index + 1;
 }
 
+export function workflowEventLine(content: string, event: string): number | undefined {
+  const trigger = topLevelField(content, "on");
+  if (!trigger) return undefined;
+
+  const mappingEntry = mapEntriesWithin(content, trigger).find((entry) => entry.key === event);
+  if (mappingEntry) return mappingEntry.line;
+
+  if (trigger.value.startsWith("[") && trigger.value.endsWith("]")) {
+    const events = trigger.value.slice(1, -1).split(",").map((value) => stripQuotes(value.trim()));
+    if (events.includes(event)) return trigger.line;
+  }
+
+  const lines = content.split(/\r?\n/);
+  for (let index = trigger.line; index < lines.length; index += 1) {
+    const rawLine = lines[index];
+    const indent = rawLine.match(/^ */)?.[0].length ?? 0;
+    if (rawLine.trim() && indent <= trigger.indent) break;
+    const value = stripInlineComment(rawLine).trim().match(/^-\s+(['"]?)([A-Za-z0-9_.-]+)\1\s*$/)?.[2];
+    if (value === event) return index + 1;
+  }
+
+  return undefined;
+}
+
 export function topLevelField(content: string, key: string): YamlMapEntry | undefined {
   return parseMapEntries(content).find((entry) => entry.indent === 0 && entry.key === key);
 }
