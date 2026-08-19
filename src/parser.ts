@@ -84,6 +84,23 @@ export function mapEntriesForKey(content: string, key: string): YamlMapEntry[] {
   return parseMapEntries(content, true).filter((entry) => entry.key === key);
 }
 
+export function flowMapEntries(parent: YamlMapEntry): YamlMapEntry[] {
+  const value = parent.value.trim();
+  if (!value.startsWith("{") || !value.endsWith("}")) return [];
+
+  return value.slice(1, -1).split(",").flatMap((field) => {
+    const match = field.trim().match(/^(?:"([^"]+)"|'([^']+)'|([A-Za-z0-9_.-]+))\s*:\s*(.*?)\s*$/);
+    if (!match) return [];
+    return [{
+      key: match[1] ?? match[2] ?? match[3],
+      value: stripQuotes(match[4]),
+      line: parent.line,
+      indent: parent.indent + 1,
+      sequence: false,
+    }];
+  });
+}
+
 export function scalarLinesForKey(content: string, key: string): YamlScalarLine[] {
   const lines = content.split(/\r?\n/);
   return mapEntriesForKey(content, key).flatMap((entry) => {
@@ -168,12 +185,12 @@ function parseMapEntries(content: string, includeSequenceEntries = false): YamlM
     const line = stripInlineComment(rawLine);
     if (!line.trim()) continue;
     const match = line.match(includeSequenceEntries
-      ? /^( *)(-\s+)?([A-Za-z0-9_.-]+)\s*:\s*(.*?)\s*$/
-      : /^( *)()([A-Za-z0-9_.-]+)\s*:\s*(.*?)\s*$/);
+      ? /^( *)(-\s+)?(?:"([^"]+)"|'([^']+)'|([A-Za-z0-9_.-]+))\s*:\s*(.*?)\s*$/
+      : /^( *)()(?:"([^"]+)"|'([^']+)'|([A-Za-z0-9_.-]+))\s*:\s*(.*?)\s*$/);
     if (!match) continue;
-    const value = match[4].trim();
+    const value = match[6].trim();
     const entryIndent = match[1].length + (match[2]?.length ?? 0);
-    entries.push({ key: match[3], value, line: index + 1, indent: entryIndent, sequence: Boolean(match[2]) });
+    entries.push({ key: match[3] ?? match[4] ?? match[5], value, line: index + 1, indent: entryIndent, sequence: Boolean(match[2]) });
     if (/^[|>][+-]?\d*$/.test(value)) blockScalarIndent = match[1].length;
   }
 

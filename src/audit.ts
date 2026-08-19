@@ -1,5 +1,5 @@
 import path from "node:path";
-import { blockText, countTopLevelMapEntries, firstScalar, lineNumberOf, lineNumberOfScalarMatch, mapEntriesWithin, mapEntriesWithinSequenceEntry, scalarLinesForKey, sequenceEntriesWithin, topLevelField, topLevelMapEntries, workflowEventLine } from "./parser.js";
+import { blockText, countTopLevelMapEntries, firstScalar, flowMapEntries, lineNumberOf, lineNumberOfScalarMatch, mapEntriesWithin, mapEntriesWithinSequenceEntry, scalarLinesForKey, sequenceEntriesWithin, topLevelField, topLevelMapEntries, workflowEventLine } from "./parser.js";
 import { findWorkflowFiles } from "./workflows.js";
 import type { AuditReport, Finding, InspectOptions, Severity, SeveritySummary, WorkflowFile, WorkflowSummary } from "./types.js";
 
@@ -38,7 +38,9 @@ export function auditWorkflow(workflow: WorkflowFile): Finding[] {
     });
   }
 
-  const permissionEntries = permissions ? mapEntriesWithin(content, permissions) : [];
+  const permissionEntries = permissions
+    ? [...mapEntriesWithin(content, permissions), ...flowMapEntries(permissions)]
+    : [];
   const contentsPermission = permissionEntries.find((entry) => entry.key === "contents");
   if (!permissions) {
     findings.push({
