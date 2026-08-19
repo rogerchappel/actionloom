@@ -53,6 +53,52 @@ jobs:
   assert.equal(finding.evidence, "contents: write");
 });
 
+test("quoted workflow keys preserve summaries and release trigger behavior", () => {
+  const workflow = {
+    path: "/tmp/release.yml",
+    relativePath: "release.yml",
+    content: `"name": "Quoted release"
+'on':
+  "push":
+    'tags': ["v*"]
+"permissions": {"contents": write}
+'jobs':
+  "publish":
+    "runs-on": ubuntu-latest
+    "timeout-minutes": 10
+    steps:
+      - run: npm ci
+`,
+  };
+
+  const summary = summarizeWorkflow(workflow);
+  const findings = auditWorkflow(workflow);
+  assert.equal(summary.name, "Quoted release");
+  assert.equal(summary.jobCount, 1);
+  assert.equal(findings.some((finding) => finding.id === "permissions-missing"), false);
+  assert.equal(findings.some((finding) => finding.id === "contents-write-without-release-context"), false);
+});
+
+test("flow permissions report non-release contents write at the mapping line", () => {
+  const findings = auditWorkflow({
+    path: "/tmp/ci.yml",
+    relativePath: "ci.yml",
+    content: `name: CI
+on: [push]
+permissions: {contents: write}
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+`,
+  });
+  const finding = findings.find((candidate) => candidate.id === "contents-write-without-release-context");
+  assert.ok(finding);
+  assert.equal(finding.line, 3);
+  assert.equal(finding.evidence, "contents: write");
+  assert.equal(findings.some((candidate) => candidate.id === "permissions-missing"), false);
+});
+
 test("pull_request_target trigger forms produce one finding at the event line", async () => {
   const report = await inspectRepository("fixtures/pull-request-target-workflows", { now: fixedNow });
   const findings = report.findings.filter((finding) => finding.id === "pull-request-target");
