@@ -14,6 +14,8 @@ The project is original work inspired by the workflow-helper niche noted in the 
 
 The `pull_request_target` rule recognizes GitHub Actions mapping syntax, inline event lists, and block event lists. It reports the trigger line once per workflow while ignoring comments and unrelated scalar text.
 
+Workflow inspection recognizes plain, single-quoted, and double-quoted mapping keys. Top-level `permissions` may use either a block mapping or a flow mapping such as `{contents: read}`; findings from a flow mapping point to its containing line.
+
 ## Install
 
 actionloom is currently distributed as an npm-format tarball attached to each
