@@ -5,7 +5,9 @@ export function generateNodeCiWorkflow(options: TemplateOptions = {}): string {
   const nodeVersions = options.nodeVersions?.length ? options.nodeVersions : ["20", "22"];
   const install = installCommand(packageManager);
   const run = runCommand(packageManager);
+  const check = checkCommand(packageManager);
   const cache = packageManager;
+  const packageManagerSetup = setupPackageManager(packageManager);
   const workflowName = options.name ?? "CI";
 
   return `name: ${workflowName}
@@ -31,6 +33,7 @@ jobs:
       - name: Check out repository
         uses: actions/checkout@v6
 
+${packageManagerSetup}
       - name: Set up Node.js
         uses: actions/setup-node@v6
         with:
@@ -41,11 +44,27 @@ jobs:
         run: ${install}
 
       - name: Check types
-        run: ${run} check --if-present
+        run: ${check}
 
       - name: Run tests
         run: ${run} test
 ${options.includeSecurity === false ? "" : securityJob()}`;
+}
+
+function setupPackageManager(packageManager: string): string {
+  if (packageManager === "pnpm") {
+    return `      - name: Set up pnpm
+        uses: pnpm/action-setup@v4
+
+`;
+  }
+  if (packageManager === "yarn") {
+    return `      - name: Set up Yarn
+        run: corepack enable
+
+`;
+  }
+  return "";
 }
 
 function securityJob(): string {
@@ -76,4 +95,10 @@ function runCommand(packageManager: string): string {
   if (packageManager === "pnpm") return "pnpm";
   if (packageManager === "yarn") return "yarn";
   return "npm run";
+}
+
+function checkCommand(packageManager: string): string {
+  if (packageManager === "pnpm") return "pnpm run --if-present check";
+  if (packageManager === "yarn") return "yarn run --if-present check";
+  return "npm run check --if-present";
 }
