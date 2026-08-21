@@ -27,6 +27,66 @@ test("explicit tag release fixture permits contents write", async () => {
   assert.equal(hasSeverityAtLeast(report, "medium"), false);
 });
 
+test("manual dispatch alongside a tag push retains the contents write finding", () => {
+  const findings = auditWorkflow({
+    path: "/tmp/release.yml",
+    relativePath: "release.yml",
+    content: `name: Release
+on:
+  push:
+    tags: ["v*"]
+  workflow_dispatch:
+permissions:
+  contents: write
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+`,
+  });
+  const finding = findings.find((candidate) => candidate.id === "contents-write-without-release-context");
+
+  assert.ok(finding);
+  assert.equal(finding.line, 7);
+  assert.equal(finding.evidence, "contents: write");
+});
+
+test("inline mixed triggers do not make contents write tag-only", () => {
+  const findings = auditWorkflow({
+    path: "/tmp/release.yml",
+    relativePath: "release.yml",
+    content: `name: Release
+on: {push: {tags: ["v*"]}, workflow_dispatch: {}}
+permissions: {contents: write}
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+`,
+  });
+  const finding = findings.find((candidate) => candidate.id === "contents-write-without-release-context");
+
+  assert.ok(finding);
+  assert.equal(finding.line, 3);
+});
+
+test("inline tag-only trigger permits release contents write", () => {
+  const findings = auditWorkflow({
+    path: "/tmp/release.yml",
+    relativePath: "release.yml",
+    content: `name: Release
+on: {push: {tags: ["v*"]}}
+permissions: {contents: write}
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+`,
+  });
+
+  assert.equal(findings.some((candidate) => candidate.id === "contents-write-without-release-context"), false);
+});
+
 test("branch-triggered CI keeps the contents write finding at the permission line", () => {
   const findings = auditWorkflow({
     path: "/tmp/ci.yml",

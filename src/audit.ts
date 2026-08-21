@@ -164,11 +164,11 @@ function hasExplicitTagReleaseTrigger(content: string): boolean {
   const triggers = topLevelField(content, "on");
   if (!triggers) return false;
 
-  const triggerEntries = mapEntriesWithin(content, triggers);
-  const push = triggerEntries.find((entry) => entry.key === "push");
-  if (!push || triggerEntries.some((entry) => entry.key !== "push" && entry.key !== "workflow_dispatch")) return false;
+  const triggerEntries = [...mapEntriesWithin(content, triggers), ...flowMapEntries(triggers)];
+  if (triggerEntries.length !== 1 || triggerEntries[0].key !== "push") return false;
 
-  const pushFilters = mapEntriesWithin(content, push);
+  const push = triggerEntries[0];
+  const pushFilters = [...mapEntriesWithin(content, push), ...flowMapEntries(push)];
   return pushFilters.some((entry) => entry.key === "tags")
     && !pushFilters.some((entry) => entry.key === "branches");
 }

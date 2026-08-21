@@ -8,7 +8,7 @@ actionloom v0.1.0 ships a small deterministic rule set. Rule IDs are stable enou
 | `pull-request-target` | high | A `pull_request_target` trigger can expose privileged context to untrusted PR changes when misused. Mapping, inline-list, and block-list `on` forms are detected; comments and unrelated scalar text are ignored. |
 | `pipe-to-shell` | high | Piping remote network output into a shell is difficult to review or reproduce. Inline, block, and folded `run` scalars are inspected; YAML comments are ignored. |
 | `permissions-missing` | medium | GitHub defaults can be broader than a small OSS CI job needs; job-level declarations do not replace an explicit workflow-level default. |
-| `contents-write-without-release-context` | medium | Write access should be reserved for release workflows explicitly limited to tag pushes (optionally with manual dispatch). Branch pushes and other CI triggers still receive this finding. |
+| `contents-write-without-release-context` | medium | Write access should be reserved for release workflows invoked only by tag-filtered pushes. Manual dispatch, branch pushes, schedules, and every other additional trigger can run outside a tag release, so mixed-trigger workflows still receive this finding. Block and inline trigger mappings are inspected. |
 | `unpinned-checkout` | low | Moving checkout branches reduce reproducibility. |
 | `node-cache-missing` | low | Missing package-manager cache makes matrix CI slower and noisier. |
 | `timeout-missing` | low | Each runner job needs its own timeout so one protected job does not leave other jobs able to run indefinitely. |
