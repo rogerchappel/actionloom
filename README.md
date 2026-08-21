@@ -74,6 +74,10 @@ node dist/cli.js generate node-ci \
   --output .github/workflows/ci.yml
 ```
 
+Generated pnpm and Yarn workflows provision the selected manager before configuring
+`actions/setup-node` caching. Optional type checks use each manager's supported
+`--if-present` form.
+
 ## Examples
 
 Try the included fixtures:

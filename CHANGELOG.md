@@ -2,6 +2,7 @@
 
 ## Unreleased
 
+- Fixed generated pnpm and Yarn CI workflows to provision their package manager before caching and to use manager-correct optional-script syntax.
 - Scoped matrix, fail-fast, and dependency-cache detection to real workflow structures so comments and unrelated YAML fields no longer affect audit results.
 - Corrected installation documentation for the current GitHub-release tarball distribution channel.
 - Added release validation that prevents advertising an unavailable npm registry package.
