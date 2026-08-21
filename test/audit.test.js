@@ -296,6 +296,22 @@ test("node CI generator emits safe permissions, matrix, and cache", () => {
   assert.match(workflow, /timeout-minutes: 15/);
   assert.match(workflow, /fail-fast: false/);
   assert.match(workflow, /cache: pnpm/);
+  assert.match(workflow, /uses: pnpm\/action-setup@v4[\s\S]*uses: actions\/setup-node@v6/);
+  assert.match(workflow, /run: pnpm run --if-present check/);
+});
+
+test("node CI generator provisions Yarn before setup-node caching", () => {
+  const workflow = generateNodeCiWorkflow({ packageManager: "yarn" });
+  assert.match(workflow, /run: corepack enable[\s\S]*cache: yarn/);
+  assert.match(workflow, /run: yarn install --immutable/);
+  assert.match(workflow, /run: yarn run --if-present check/);
+});
+
+test("node CI generator keeps npm's optional-script syntax", () => {
+  const workflow = generateNodeCiWorkflow({ packageManager: "npm" });
+  assert.doesNotMatch(workflow, /Set up pnpm|Set up Yarn/);
+  assert.match(workflow, /run: npm ci/);
+  assert.match(workflow, /run: npm run check --if-present/);
 });
 
 test("workflow summaries and findings ignore matrix and cache text in comments or unrelated scopes", async () => {
