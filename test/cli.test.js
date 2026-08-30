@@ -4,6 +4,7 @@ import { test } from "node:test";
 import { readFileSync, unlinkSync, existsSync, mkdtempSync, readdirSync, rmSync } from "node:fs";
 import { join } from "node:path";
 import os from "node:os";
+import { parse } from "yaml";
 
 const cli = join(process.cwd(), "dist/cli.js");
 
@@ -63,6 +64,37 @@ test("CLI generate node-ci command outputs valid YAML", async () => {
   assert.match(stdout, /on:/);
   assert.match(stdout, /jobs:/);
   assert.match(stdout, /contents: read/);
+  assert.doesNotThrow(() => parse(stdout));
+});
+
+test("CLI generate accepts supported Node version forms and emits parseable YAML", async () => {
+  const { stdout, stderr, code } = await runCli([
+    "generate", "node-ci", "--node-versions", "20,22.12.0,20.x,lts/*,>=20,^22.0.0",
+  ]);
+  assert.equal(code, 0, stderr);
+  const workflow = parse(stdout);
+  assert.deepEqual(workflow.jobs.test.strategy.matrix["node-version"], [
+    "20", "22.12.0", "20.x", "lts/*", ">=20", "^22.0.0",
+  ]);
+});
+
+test("CLI generate rejects malformed Node versions without creating or overwriting output", async () => {
+  const cwd = mkdtempSync(join(os.tmpdir(), "actionloom-node-versions-"));
+  const output = join(cwd, "ci.yml");
+  try {
+    for (const value of ["20,[bad", "20,{bad", "20,22 # comment", "20,${{ github.token }}"]) {
+      const sentinel = `unchanged: ${value}\n`;
+      await import("node:fs/promises").then(({ writeFile }) => writeFile(output, sentinel));
+      const { code, stderr } = await runCli([
+        "generate", "node-ci", "--node-versions", value, "--output", output,
+      ], cwd);
+      assert.equal(code, 1, value);
+      assert.match(stderr, /Invalid Node version/);
+      assert.equal(readFileSync(output, "utf8"), sentinel);
+    }
+  } finally {
+    rmSync(cwd, { recursive: true, force: true });
+  }
 });
 
 test("CLI inspect --fail-on high exits 1 for unsafe fixtures", async () => {
