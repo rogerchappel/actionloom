@@ -16,6 +16,11 @@ The `pull_request_target` rule recognizes GitHub Actions mapping syntax, inline 
 
 Workflow inspection recognizes plain, single-quoted, and double-quoted mapping keys. Top-level `permissions` may use either a block mapping or a flow mapping such as `{contents: read}`; findings from a flow mapping point to its containing line.
 
+When given a workflow file directly, `inspect` requires a `.yml` or `.yaml`
+extension. Every discovered workflow is parsed as YAML before auditing; unsupported
+direct files and malformed YAML exit nonzero with a diagnostic naming the file and
+parse problem instead of producing a partial audit report.
+
 ## Install
 
 actionloom is currently distributed as an npm-format tarball attached to each
