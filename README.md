@@ -79,6 +79,11 @@ node dist/cli.js generate node-ci \
   --output .github/workflows/ci.yml
 ```
 
+`--node-versions` accepts a comma-separated list of Node versions, ranges, or
+setup-node aliases, such as `20`, `22.12.0`, `20.x`, `>=20`, `^22.0.0`, or
+`lts/*`. Entries are validated and YAML-quoted before the workflow is written;
+malformed entries fail without creating or overwriting the output file.
+
 Generated pnpm and Yarn workflows provision the selected manager before configuring
 `actions/setup-node` caching. Optional type checks use each manager's supported
 `--if-present` form.
