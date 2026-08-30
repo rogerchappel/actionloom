@@ -1,8 +1,57 @@
 import assert from "node:assert/strict";
+import { mkdtemp, rm, writeFile } from "node:fs/promises";
+import { tmpdir } from "node:os";
+import path from "node:path";
 import { test } from "node:test";
 import { auditWorkflow, formatMarkdown, generateNodeCiWorkflow, hasSeverityAtLeast, inspectRepository, summarizeWorkflow } from "../dist/index.js";
 
 const fixedNow = new Date("2026-05-04T00:00:00.000Z");
+
+async function withWorkflowFile(name, content, callback) {
+  const directory = await mkdtemp(path.join(tmpdir(), "actionloom-workflow-"));
+  const file = path.join(directory, name);
+  await writeFile(file, content, "utf8");
+  try {
+    await callback(file);
+  } finally {
+    await rm(directory, { recursive: true, force: true });
+  }
+}
+
+test("direct inspection rejects files without a YAML workflow extension", async () => {
+  await withWorkflowFile("notes.txt", "name: not a workflow\n", async (file) => {
+    await assert.rejects(inspectRepository(file), /Unsupported workflow file .*notes\.txt.*expected \.yml or \.yaml/i);
+  });
+});
+
+test("inspection rejects malformed YAML with the file and parse problem", async () => {
+  for (const [name, content] of [
+    ["mapping.yml", "name: broken\non: [push\njobs:\n  test: {}\n"],
+    ["list.yaml", "name: broken\njobs:\n  test:\n    steps:\n      - run: ok\n       - run: bad\n"],
+  ]) {
+    await withWorkflowFile(name, content, async (file) => {
+      await assert.rejects(inspectRepository(file), new RegExp(`Invalid workflow YAML .*${name}.*line`, "i"));
+    });
+  }
+});
+
+test("inspection accepts valid quoted, flow, and block workflow syntax", async () => {
+  const content = `"name": "Valid workflow"
+'on': {push: {branches: [main]}}
+'permissions': {contents: read}
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - run: npm test
+`;
+  await withWorkflowFile("valid.yml", content, async (file) => {
+    const report = await inspectRepository(file, { now: fixedNow });
+    assert.equal(report.workflowCount, 1);
+    assert.equal(report.summaries[0].name, "Valid workflow");
+  });
+});
 
 test("inspectRepository reports risky workflow findings from fixtures", async () => {
   const report = await inspectRepository("fixtures/unsafe-workflows", { now: fixedNow });
