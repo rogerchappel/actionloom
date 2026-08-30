@@ -68,5 +68,8 @@
     "type": "github",
     "url": "https://github.com/sponsors/rogerchappel"
   },
-  "sideEffects": false
+  "sideEffects": false,
+  "dependencies": {
+    "yaml": "^2.9.0"
+  }
 }
