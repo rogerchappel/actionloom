@@ -409,6 +409,13 @@ test("node CI generator emits safe permissions, matrix, and cache", () => {
   assert.match(workflow, /run: pnpm run --if-present check/);
 });
 
+test("node CI generator rejects malformed Node version entries", () => {
+  assert.throws(
+    () => generateNodeCiWorkflow({ nodeVersions: ["20", "[bad"] }),
+    /Invalid Node version/,
+  );
+});
+
 test("node CI generator provisions Yarn before setup-node caching", () => {
   const workflow = generateNodeCiWorkflow({ packageManager: "yarn" });
   assert.match(workflow, /run: corepack enable[\s\S]*cache: yarn/);

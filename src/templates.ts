@@ -3,6 +3,7 @@ import type { TemplateOptions } from "./types.js";
 export function generateNodeCiWorkflow(options: TemplateOptions = {}): string {
   const packageManager = options.packageManager ?? "npm";
   const nodeVersions = options.nodeVersions?.length ? options.nodeVersions : ["20", "22"];
+  for (const version of nodeVersions) validateNodeVersion(version);
   const install = installCommand(packageManager);
   const run = runCommand(packageManager);
   const check = checkCommand(packageManager);
@@ -28,7 +29,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        node-version: [${nodeVersions.join(", ")}]
+        node-version: [${nodeVersions.map((version) => JSON.stringify(version)).join(", ")}]
     steps:
       - name: Check out repository
         uses: actions/checkout@v6
@@ -49,6 +50,18 @@ ${packageManagerSetup}
       - name: Run tests
         run: ${run} test
 ${options.includeSecurity === false ? "" : securityJob()}`;
+}
+
+const versionAtom = String.raw`\d+(?:\.(?:\d+|x|\*)){0,2}(?:-[0-9A-Za-z.-]+)?`;
+const nodeVersionPattern = new RegExp(
+  String.raw`^(?:${versionAtom}|(?:latest|node|current|\*)|lts\/(?:\*|[A-Za-z][0-9A-Za-z._-]*)|(?:[~^]|>=?|<=?)${versionAtom}|${versionAtom}\s+-\s+${versionAtom}|(?:>=?|<=?)${versionAtom}(?:\s+(?:>=?|<=?)${versionAtom})+)$`,
+  "i",
+);
+
+function validateNodeVersion(version: string): void {
+  if (!nodeVersionPattern.test(version)) {
+    throw new Error(`Invalid Node version: ${version}. Use a version, range, or alias such as 20, 22.12.0, 20.x, >=20, or lts/*`);
+  }
 }
 
 function setupPackageManager(packageManager: string): string {

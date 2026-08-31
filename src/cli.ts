@@ -106,6 +106,9 @@ Usage:
   actionloom inspect <repo-or-workflow> [--format markdown|json] [--output report.md] [--fail-on high]
   actionloom generate node-ci [--package-manager npm|pnpm|yarn] [--node-versions 20,22] [--output .github/workflows/ci.yml]
 
+Node versions:
+  Comma-separated versions, ranges, or setup-node aliases; for example 20,22.12.0,20.x,>=20,lts/*.
+
 Safety:
   actionloom only reads local files and writes explicit --output paths. It makes no network calls.
   Direct workflow files must use .yml or .yaml and valid YAML is required before auditing.`);
